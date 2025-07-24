@@ -115,8 +115,8 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap');
 
-html, body, [class*="css"]  {
-    font-family: 'Noto Sans JP', sans-serif;
+html, body, [class*="css"], [data-testid="stAppViewContainer"] * {
+    font-family: 'Kiwi Maru', sans-serif !important;
 }
 [data-testid="stSidebar"] {
     background-color: #F6F4EF;
@@ -154,8 +154,44 @@ html, body, [class*="css"]  {
 </style>
 """, unsafe_allow_html=True)
 
-st.title("うおざ家の冷蔵庫")
+import streamlit as st
+
+# ----------------------------
+# フォント＋余白調整CSS
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic&display=swap');
+
+/* 全体フォント */
+html, body, [class^="css"], [data-testid="stAppViewContainer"] * {
+    font-family: 'Zen Maru Gothic', sans-serif !important;
+}
+
+/* メイン領域の余白削除 */
+[data-testid="stAppViewContainer"] > .main {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* 最初のセクションの余白も削除 */
+section.main > div:first-child {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ----------------------------
+# HTMLで直接タイトル表示（余白ゼロにする）
+st.markdown("""
+<div style="margin-top:0; padding-top:0">
+    <h1 style='font-family: "Kiwi Maru", sans-serif; margin-top:0;'>うおざ家の冷蔵庫</h1>
+</div>
+""", unsafe_allow_html=True)
+
+# 本文
 st.markdown("食材を登録して、賞味期限も一緒に管理しましょう。")
+
 
 # ----------------------------
 # サイドバー：食材登録
@@ -294,11 +330,12 @@ if st.button("レシピを提案"):
 以下の条件に合うレシピを1つ提案してください：
 - 使用可能な食材: {ingredients_text}
 - 減塩・低コレステロール
+- 夕飯の主菜と副菜
 - 足りない材料があってもOK（その場合は足りない材料を明記）
-- 調味料は考慮しなくてOK
+- 調味料は材料として考慮しなくてOKだが、レシピの分量は記載要
 - 出力形式:
   ### レシピ名
-  - 材料
+  - 材料 分量
   - 作り方
   - 不足している材料があれば最後に列挙
 """
