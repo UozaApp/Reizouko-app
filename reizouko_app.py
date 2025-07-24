@@ -89,7 +89,7 @@ init_data_file()
 
 # ----------------------------
 # UI設定
-st.set_page_config(page_title="うおざ家の冷蔵庫", layout="wide")
+st.set_page_config(page_title="わがやの冷蔵庫", layout="wide")
 
 st.markdown("""
 <style>
