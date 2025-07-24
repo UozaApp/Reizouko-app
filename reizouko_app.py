@@ -3,6 +3,53 @@ import pandas as pd
 import math
 from datetime import datetime, timedelta
 
+# セッション内で画面幅を記録
+st.markdown("""
+<script>
+const width = window.innerWidth;
+window.parent.postMessage({type: 'streamlit:width', width}, '*');
+</script>
+""", unsafe_allow_html=True)
+
+# カスタムJSから画面幅を受信
+st.components.v1.html(
+    """
+    <script>
+    const sendWidth = () => {
+        const width = window.innerWidth;
+        const streamlitEvent = new Event("streamlit:render");
+        window.dispatchEvent(streamlitEvent);
+        window.parent.postMessage({type: "streamlit:width", width: width}, "*");
+    };
+    sendWidth();
+    window.addEventListener("resize", sendWidth);
+    </script>
+    """,
+    height=0,
+)
+
+if "screen_width" not in st.session_state:
+    st.session_state["screen_width"] = 1200  # デフォルト
+
+# WebSocketイベントで幅を受信
+st.markdown("""
+<script>
+window.addEventListener("message", (event) => {
+    if (event.data.type === "streamlit:width") {
+        const width = event.data.width;
+        fetch("/_stcore/update_session_state", {
+            method: "POST",
+            body: JSON.stringify({screen_width: width}),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+    }
+});
+</script>
+""", unsafe_allow_html=True)
+
+
 # ----------------------------
 # データ保存用CSVファイル名
 DATA_FILE = "reizouko_list.csv"
@@ -156,47 +203,54 @@ if df_current.empty:
     st.info("現在、食材は登録されていません。")
 else:
     grouped = df_current.groupby("ジャンル")
-    for genre, group in grouped:
-        st.markdown(f"#### ジャンル: {genre}")
-        num_items = len(group)
+for genre, group in grouped:
+    st.markdown(f"#### ジャンル: {genre}")
+    num_items = len(group)
 
-        # スマホは2列、それ以外は最大3列（食材数に応じて調整）
-        num_columns = 3 if num_items >= 3 else num_items
-        rows = math.ceil(num_items / num_columns)
+    # ▼ スマホとPCで列数を自動切替
+    screen_width = st.session_state.get("screen_width", 1200)
+    if screen_width < 768:
+        num_columns = 2
+    elif screen_width < 1080:
+        num_columns = 2
+    else:
+        num_columns = 3
+    num_columns = min(num_items, num_columns)
 
-        for row in range(rows):
-            cols = st.columns(num_columns)
-            for i in range(num_columns):
-                idx = row * num_columns + i
-                if idx < num_items:
-                    r = group.iloc[idx]
-                    food = r["食材"]
-                    expiry = r["賞味期限"]
-                    buy_date = r["購入日"]
-                    quantity = r["個数"]
-                    days_left = (expiry - today).days if pd.notna(expiry) else None
+    rows = math.ceil(num_items / num_columns)
+    for row in range(rows):
+        cols = st.columns(num_columns)
+        for i in range(num_columns):
+            idx = row * num_columns + i
+            if idx < num_items:
+                r = group.iloc[idx]
+                food = r["食材"]
+                expiry = r["賞味期限"]
+                buy_date = r["購入日"]
+                quantity = r["個数"]
+                days_left = (expiry - today).days if pd.notna(expiry) else None
 
-                    if days_left is None:
-                        color = "#aaa"; status = "賞味期限不明"
-                    elif days_left < 0:
-                        color = "#f2b5b5"; status = f"期限切れ（{abs(days_left)}日前）"
-                    elif days_left == 0:
-                        color = "#ffcccc"; status = "本日まで"
-                    elif days_left <= 2:
-                        color = "#ffe5b4"; status = f"あと{days_left}日"
-                    elif days_left <= 5:
-                        color = "#f5f0c9"; status = f"あと{days_left}日"
-                    else:
-                        color = "#d5f5e3"; status = f"あと{days_left}日"
+                if days_left is None:
+                    color = "#aaa"; status = "賞味期限不明"
+                elif days_left < 0:
+                    color = "#f2b5b5"; status = f"期限切れ（{abs(days_left)}日前）"
+                elif days_left == 0:
+                    color = "#ffcccc"; status = "本日まで"
+                elif days_left <= 2:
+                    color = "#ffe5b4"; status = f"あと{days_left}日"
+                elif days_left <= 5:
+                    color = "#f5f0c9"; status = f"あと{days_left}日"
+                else:
+                    color = "#d5f5e3"; status = f"あと{days_left}日"
 
-                    with cols[i]:
-                        st.markdown(
-                            f"<div class='food-card' style='background-color:{color};'>"
-                            f"<strong>{food}</strong>"
-                            f"購入日: {buy_date}<br>賞味期限: {expiry.date()}<br>個数: {quantity}<br>{status}"
-                            f"</div>",
-                            unsafe_allow_html=True
-                        )
+                with cols[i]:
+                    st.markdown(
+                        f"<div class='food-card' style='background-color:{color};'>"
+                        f"<strong>{food}</strong>"
+                        f"購入日: {buy_date}<br>賞味期限: {expiry.date()}<br>個数: {quantity}<br>{status}"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
 
 
 # ----------------------------
