@@ -160,14 +160,10 @@ else:
         st.markdown(f"#### ジャンル: {genre}")
         num_items = len(group)
 
-        # デバイス幅に応じて列数変更（仮に768px以下をスマホとする）
-        num_columns = 3  # デフォルトはPC用3列
-        if st.session_state.get("is_mobile", False):
-            num_columns = 2
-        elif num_items <= 2:
-            num_columns = num_items
-
+        # スマホは2列、それ以外は最大3列（食材数に応じて調整）
+        num_columns = 3 if num_items >= 3 else num_items
         rows = math.ceil(num_items / num_columns)
+
         for row in range(rows):
             cols = st.columns(num_columns)
             for i in range(num_columns):
@@ -198,9 +194,9 @@ else:
                             f"<div class='food-card' style='background-color:{color};'>"
                             f"<strong>{food}</strong>"
                             f"購入日: {buy_date}<br>賞味期限: {expiry.date()}<br>個数: {quantity}<br>{status}"
-                            f"</div>", unsafe_allow_html=True
+                            f"</div>",
+                            unsafe_allow_html=True
                         )
-
 
 
 # ----------------------------
