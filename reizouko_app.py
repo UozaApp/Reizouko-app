@@ -185,7 +185,7 @@ section.main > div:first-child {
 # HTMLで直接タイトル表示（余白ゼロにする）
 st.markdown("""
 <div style="margin-top:0; padding-top:0">
-    <h1 style='font-family: "Kiwi Maru", sans-serif; margin-top:0;'>うおざ家の冷蔵庫</h1>
+    <h1 style='font-family: "Kiwi Maru", sans-serif; margin-top:0;'>わがやの冷蔵庫</h1>
 </div>
 """, unsafe_allow_html=True)
 
