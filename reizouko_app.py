@@ -3,7 +3,8 @@ import pandas as pd
 import math
 from datetime import datetime, timedelta
 
-# セッション内で画面幅を記録
+# ----------------------------
+# セッション内で画面幅を記録（スマホ・PC表示切替用）
 st.markdown("""
 <script>
 const width = window.innerWidth;
@@ -11,7 +12,8 @@ window.parent.postMessage({type: 'streamlit:width', width}, '*');
 </script>
 """, unsafe_allow_html=True)
 
-# カスタムJSから画面幅を受信
+# ----------------------------
+# 画面リサイズ時も幅を再送信
 st.components.v1.html(
     """
     <script>
@@ -28,10 +30,13 @@ st.components.v1.html(
     height=0,
 )
 
+# ----------------------------
+# 初期値として画面幅をセッションに保存
 if "screen_width" not in st.session_state:
-    st.session_state["screen_width"] = 1200  # デフォルト
+    st.session_state["screen_width"] = 1200
 
-# WebSocketイベントで幅を受信
+# ----------------------------
+# 幅取得イベントを受信しセッションに反映
 st.markdown("""
 <script>
 window.addEventListener("message", (event) => {
@@ -49,13 +54,113 @@ window.addEventListener("message", (event) => {
 </script>
 """, unsafe_allow_html=True)
 
+# ----------------------------
+# CSS：フォント・カードデザイン・スマホ対応など全てここに統一
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kiwi+Maru&display=swap');
+
+/* 全体フォント */
+html, body, [class^="css"], [data-testid="stAppViewContainer"] * {
+    font-family: 'Kiwi Maru', sans-serif !important;
+}
+
+/* カスタムタイトル用クラス（スマホ対応） */
+h1.custom-title {
+    font-size: 2.4rem;
+    text-align: center;
+    word-break: break-word;
+    white-space: normal;
+    margin: 0;
+    padding: 0;
+}
+
+/* 中央寄せのテキスト */
+.center-text {
+    text-align: center;
+    font-size: 16px;
+    margin-bottom: 1rem;
+}
+
+/* スマホレイアウト調整 */
+@media (max-width: 768px) {
+    h1.custom-title {
+        font-size: 1.6rem;
+    }
+    .food-card {
+        width: 100% !important;
+        margin: 10px 0 !important;
+    }
+    .section-card {
+        margin: 10px !important;
+        padding: 10px !important;
+    }
+    .css-1v0mbdj {
+        flex-direction: column !important;
+    }
+}
+
+/* メイン領域の上部余白削除 */
+[data-testid="stAppViewContainer"] > .main,
+section.main > div:first-child {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* サイドバー背景色 */
+[data-testid="stSidebar"] {
+    background-color: #F6F4EF;
+}
+
+/* セクション（白背景カード） */
+.section-card {
+    background-color: #ffffff;
+    padding: 20px;
+    margin: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* 食材カードデザイン */
+.food-card {
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.3em;
+    color: #333;
+    margin: 10px auto;
+    height: 120px;
+    width: 100%;
+    max-width: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.food-card strong {
+    font-size: 20px;
+    margin-bottom: 2px;
+    line-height: 1.4em;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ----------------------------
-# データ保存用CSVファイル名
+# タイトル表示（フォント＋余白調整済み）
+st.markdown("""
+<h1 class="custom-title">わがやの冷蔵庫</h1>
+<p class="center-text">食材を登録して、賞味期限も一緒に管理しましょう。</p>
+""", unsafe_allow_html=True)
+
+# ----------------------------
+# データファイル関数定義
 DATA_FILE = "reizouko_list.csv"
 
-# ----------------------------
-# 初回起動時にファイルがなければ作成
 def init_data_file():
     try:
         pd.read_csv(DATA_FILE)
@@ -63,8 +168,6 @@ def init_data_file():
         df_init = pd.DataFrame(columns=["食材", "購入日", "賞味期限", "ジャンル", "個数"])
         df_init.to_csv(DATA_FILE, index=False)
 
-# ----------------------------
-# データを読み込み／保存
 def load_data():
     return pd.read_csv(DATA_FILE)
 
@@ -84,114 +187,12 @@ def add_items(items, buy_date, expiry_date, genre, quantity):
     save_data(df)
 
 # ----------------------------
-# アプリ開始処理
+# 初期化とデータ読み込み
 init_data_file()
+df_current = load_data()
 
-# ----------------------------
-# UI設定
-st.set_page_config(page_title="わがやの冷蔵庫", layout="wide")
-
-st.markdown("""
-<style>
-/* レスポンシブ対応 */
-@media (max-width: 768px) {
-    .food-card {
-        width: 100% !important;
-        margin: 10px 0 !important;
-    }
-    .section-card {
-        margin: 10px !important;
-        padding: 10px !important;
-    }
-    .css-1v0mbdj {  /* Streamlit のカラムを縦に積む */
-        flex-direction: column !important;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap');
-
-html, body, [class*="css"], [data-testid="stAppViewContainer"] * {
-    font-family: 'Kiwi Maru', sans-serif !important;
-}
-[data-testid="stSidebar"] {
-    background-color: #F6F4EF;
-}
-.section-card {
-    background-color: #ffffff;
-    padding: 20px;
-    margin: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-.food-card {
-    padding: 10px 12px;
-    border-radius: 10px;
-    font-size: 13px;
-    line-height: 1.3em;
-    color: #333;
-    margin: 10px auto;
-    height: 120px;
-    width: 100%;
-    max-width: 200px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    overflow: hidden;
-}
-.food-card strong {
-    font-size: 20px;
-    margin-bottom: 2px;
-    line-height: 1.4em;
-}
-</style>
-""", unsafe_allow_html=True)
-
-import streamlit as st
-
-# ----------------------------
-# フォント＋余白調整CSS
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic&display=swap');
-
-/* 全体フォント */
-html, body, [class^="css"], [data-testid="stAppViewContainer"] * {
-    font-family: 'Zen Maru Gothic', sans-serif !important;
-}
-
-/* メイン領域の余白削除 */
-[data-testid="stAppViewContainer"] > .main {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-
-/* 最初のセクションの余白も削除 */
-section.main > div:first-child {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ----------------------------
-# HTMLで直接タイトル表示（余白ゼロにする）
-st.markdown("""
-<div style="margin-top:0; padding-top:0">
-    <h1 style='font-family: "Kiwi Maru", sans-serif; margin-top:0;'>わがやの冷蔵庫</h1>
-</div>
-""", unsafe_allow_html=True)
-
-# 本文
-st.markdown("食材を登録して、賞味期限も一緒に管理しましょう。")
-
+# ※ 以下アプリ本体処理が続く
+# 個数の表示は round(qty * 2) % 2 == 1 を条件にして .5 のみ小数表示
 
 # ----------------------------
 # サイドバー：食材登録
@@ -213,7 +214,7 @@ def food_registration():
         expiry_date = buy_date + timedelta(days=genre_expiry_days[genre])
         st.sidebar.markdown(f"自動設定された賞味期限: **{expiry_date.strftime('%Y-%m-%d')}**")
 
-    quantity = st.sidebar.number_input("個数", min_value=1, value=1)
+    quantity = st.sidebar.number_input("個数", min_value=0.5, value=1.0, step=0.5)
 
     if st.sidebar.button("登録"):
         all_items = selected_items.copy()
@@ -279,14 +280,18 @@ for genre, group in grouped:
                 else:
                     color = "#d5f5e3"; status = f"あと{days_left}日"
 
+                # 小数点以下が .5 のときだけ表示、それ以外は整数で表示
+                display_quantity = f"{int(quantity)}" if quantity % 1 == 0 else f"{quantity:.1f}"
+
                 with cols[i]:
                     st.markdown(
                         f"<div class='food-card' style='background-color:{color};'>"
                         f"<strong>{food}</strong>"
-                        f"購入日: {buy_date}<br>賞味期限: {expiry.date()}<br>個数: {quantity}<br>{status}"
+                        f"購入日: {buy_date}<br>賞味期限: {expiry.date()}<br>個数: {display_quantity}<br>{status}"
                         f"</div>",
                         unsafe_allow_html=True
                     )
+
 
 
 # ----------------------------
