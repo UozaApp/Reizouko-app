@@ -147,6 +147,11 @@ section.main > div:first-child {
     margin-bottom: 2px;
     line-height: 1.4em;
 }
+            
+/* サイドバー開閉ボタンの文字ヒント（"Keyboard double arrow right"）を非表示 */
+[data-testid="collapsedControl"] > div {
+    display: none !important;
+}                   
 </style>
 """, unsafe_allow_html=True)
 
