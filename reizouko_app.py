@@ -156,46 +156,51 @@ if df_current.empty:
     st.info("現在、食材は登録されていません。")
 else:
     grouped = df_current.groupby("ジャンル")
-for genre, group in grouped:
-    st.markdown(f"#### ジャンル: {genre}")
-    
-    num_items = len(group)
-    num_columns = 2  # モバイルなら2列を基本に
-    num_columns = min(num_items, num_columns)
+    for genre, group in grouped:
+        st.markdown(f"#### ジャンル: {genre}")
+        num_items = len(group)
 
-    rows = math.ceil(num_items / num_columns)
-    for row in range(rows):
-        cols = st.columns(num_columns)
-        for i in range(num_columns):
-            idx = row * num_columns + i
-            if idx < num_items:
-                r = group.iloc[idx]
-                food = r["食材"]
-                expiry = r["賞味期限"]
-                buy_date = r["購入日"]
-                quantity = r["個数"]
-                days_left = (expiry - today).days if pd.notna(expiry) else None
+        # デバイス幅に応じて列数変更（仮に768px以下をスマホとする）
+        num_columns = 3  # デフォルトはPC用3列
+        if st.session_state.get("is_mobile", False):
+            num_columns = 2
+        elif num_items <= 2:
+            num_columns = num_items
 
-                if days_left is None:
-                    color = "#aaa"; status = "賞味期限不明"
-                elif days_left < 0:
-                    color = "#f2b5b5"; status = f"期限切れ（{abs(days_left)}日前）"
-                elif days_left == 0:
-                    color = "#ffcccc"; status = "本日まで"
-                elif days_left <= 2:
-                    color = "#ffe5b4"; status = f"あと{days_left}日"
-                elif days_left <= 5:
-                    color = "#f5f0c9"; status = f"あと{days_left}日"
-                else:
-                    color = "#d5f5e3"; status = f"あと{days_left}日"
+        rows = math.ceil(num_items / num_columns)
+        for row in range(rows):
+            cols = st.columns(num_columns)
+            for i in range(num_columns):
+                idx = row * num_columns + i
+                if idx < num_items:
+                    r = group.iloc[idx]
+                    food = r["食材"]
+                    expiry = r["賞味期限"]
+                    buy_date = r["購入日"]
+                    quantity = r["個数"]
+                    days_left = (expiry - today).days if pd.notna(expiry) else None
 
-                with cols[i]:
-                    st.markdown(
-                        f"<div class='food-card' style='background-color:{color};'>"
-                        f"<strong>{food}</strong>"
-                        f"購入日: {buy_date}<br>賞味期限: {expiry.date()}<br>個数: {quantity}<br>{status}"
-                        f"</div>", unsafe_allow_html=True
-                    )
+                    if days_left is None:
+                        color = "#aaa"; status = "賞味期限不明"
+                    elif days_left < 0:
+                        color = "#f2b5b5"; status = f"期限切れ（{abs(days_left)}日前）"
+                    elif days_left == 0:
+                        color = "#ffcccc"; status = "本日まで"
+                    elif days_left <= 2:
+                        color = "#ffe5b4"; status = f"あと{days_left}日"
+                    elif days_left <= 5:
+                        color = "#f5f0c9"; status = f"あと{days_left}日"
+                    else:
+                        color = "#d5f5e3"; status = f"あと{days_left}日"
+
+                    with cols[i]:
+                        st.markdown(
+                            f"<div class='food-card' style='background-color:{color};'>"
+                            f"<strong>{food}</strong>"
+                            f"購入日: {buy_date}<br>賞味期限: {expiry.date()}<br>個数: {quantity}<br>{status}"
+                            f"</div>", unsafe_allow_html=True
+                        )
+
 
 
 # ----------------------------
